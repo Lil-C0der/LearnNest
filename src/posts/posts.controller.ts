@@ -12,11 +12,9 @@ import { ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { PostModel } from './post.model';
 
 class CreatePostDTO {
-  // @ApiProperty({ description: '帖子的 id' })
-  // id: number;
-  @ApiProperty({ description: '帖子的标题' })
+  @ApiProperty({ description: '帖子的标题', example: '一个帖子标题' })
   title: string;
-  @ApiProperty({ description: '帖子的内容' })
+  @ApiProperty({ description: '帖子的内容', example: '一个帖子内容' })
   content: string;
 }
 
@@ -26,19 +24,15 @@ export class PostsController {
   @Get('/')
   @ApiOperation({ summary: '查询帖子' })
   async index() {
-    // return ['post1', 'post2'];
     return await PostModel.find();
   }
 
   @Post()
   @ApiOperation({ summary: '创建帖子' })
-  async create(@Body() body: CreatePostDTO) {
-    // console.log('body', body, typeof body.id);
-
+  async create(@Body() createPostDto: CreatePostDTO) {
     const { _id: id } = await PostModel.create({
-      // id: body.id,
-      title: body.title,
-      content: body.content
+      title: createPostDto.title,
+      content: createPostDto.content
     });
 
     const { title, content } = await PostModel.findById(id).exec();
@@ -46,6 +40,7 @@ export class PostsController {
     return {
       code: 200,
       success: true,
+      msg: '发表成功',
       data: {
         id,
         title,
@@ -56,35 +51,52 @@ export class PostsController {
 
   @Get(':id')
   @ApiOperation({ summary: '文章详情' })
-  detail(@Param('id') id: string) {
-    console.log(id);
+  async detail(@Param('id') queryId: string) {
+    const { _id: id, content, title } = await PostModel.findById(queryId);
 
     return {
-      id: id,
-      title: 'TITLE'
+      code: 200,
+      success: true,
+      data: {
+        id,
+        content,
+        title
+      }
     };
   }
 
   @Put(':id')
   @ApiOperation({ summary: '编辑帖子' })
-  update(id: string, @Body() body: CreatePostDTO) {
-    console.log(body);
+  async update(
+    @Param('id') queryId: string,
+    @Body() updatePostDTO: CreatePostDTO
+  ) {
+    await PostModel.findByIdAndUpdate(queryId, updatePostDTO);
+    const { _id: id, title, content } = await PostModel.findById(
+      queryId
+    ).exec();
 
     return {
-      success: true
+      code: 200,
+      success: true,
+      msg: '更新成功',
+      data: {
+        id,
+        title,
+        content
+      }
     };
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '删除帖子' })
   async remove(@Param('id') id: string) {
-    const res = await PostModel.findByIdAndDelete(id);
-    console.log(res);
-    console.log(id);
-    
-    
+    await PostModel.findByIdAndDelete(id);
+
     return {
-      success: true
+      code: 200,
+      success: true,
+      msg: '删除成功'
     };
   }
 }
